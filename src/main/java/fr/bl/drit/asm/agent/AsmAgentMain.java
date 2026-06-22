@@ -72,6 +72,7 @@ public class AsmAgentMain {
         if (args == null || args.trim().isEmpty()) {
             return map;
         }
+
         String[] pairs = args.split(",");
         for (String pair : pairs) {
             String trimmed = pair.trim();
@@ -88,12 +89,13 @@ public class AsmAgentMain {
             map.put(key, value);
         }
         return map;
-  }
+    }
 
-  private static void printUsage(PrintStream out) {
-    out.println(
-        "[ASM-agent] Usage: target=<prefix[+prefix...]>,out=<dir>");
-    out.println("  target   : '+'-separated list of class name prefixes to instrument (required)");
-    out.println("  out      : output directory for flow files and method ID mapping (required)");
-  }
+    
+    private static void printUsage(PrintStream out) {
+        out.println(
+            "[ASM-agent] Usage: target=<prefix[+prefix...]>,out=<dir>");
+        out.println("  target   : '+'-separated list of class name prefixes to instrument (required)");
+        out.println("  out      : output directory for flow files and method ID mapping (required)");
+    }
 }

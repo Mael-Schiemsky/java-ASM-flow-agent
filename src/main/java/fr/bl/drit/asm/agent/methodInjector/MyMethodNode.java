@@ -3,7 +3,6 @@ package fr.bl.drit.asm.agent.methodInjector;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -30,6 +29,7 @@ public class MyMethodNode extends MethodNode{
         }
 
         InsnList enterProbe = buildPrintln("e:enter, method:" + fullyQualifiedName);
+
         if (instructions.size() > 0) {
             instructions.insertBefore(instructions.getFirst(), enterProbe);
         } else {
@@ -40,57 +40,62 @@ public class MyMethodNode extends MethodNode{
             int opcode = insn.getOpcode();
             boolean isReturn = (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
             boolean isThrow  = opcode == Opcodes.ATHROW;
+
             if (!isReturn && !isThrow) continue;
 
-            InsnList probe = new InsnList();
+            InsnList exitProbe = new InsnList();
 
-            probe.add(buildPrintln("e:exit, method:" + fullyQualifiedName));
+            exitProbe.add(buildPrintln("e:exit, method:" + fullyQualifiedName));
 
             if (opcode == Opcodes.IRETURN || opcode == Opcodes.FRETURN) {
-                probe.add(new InsnNode(Opcodes.DUP));
+                exitProbe.add(new InsnNode(Opcodes.DUP));
             } else if (opcode == Opcodes.LRETURN || opcode == Opcodes.DRETURN) {
-                probe.add(new InsnNode(Opcodes.DUP2));
+                exitProbe.add(new InsnNode(Opcodes.DUP2));
             }
 
             switch (opcode) {
                 case Opcodes.IRETURN:
-                    probe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toString", "(I)Ljava/lang/String;", false));
+                    exitProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toString", "(I)Ljava/lang/String;", false));
                     break;
                 case Opcodes.FRETURN:
-                    probe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Float", "toString", "(F)Ljava/lang/String;", false));
+                    exitProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Float", "toString", "(F)Ljava/lang/String;", false));
                     break;
                 case Opcodes.LRETURN:
-                    probe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "toString", "(J)Ljava/lang/String;", false));
+                    exitProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "toString", "(J)Ljava/lang/String;", false));
                     break;
                 case Opcodes.DRETURN:
-                    probe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "toString", "(D)Ljava/lang/String;", false));
+                    exitProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "toString", "(D)Ljava/lang/String;", false));
                     break;
                 case Opcodes.ARETURN:
                 case Opcodes.RETURN:
                 case Opcodes.ATHROW:
-                    probe.add(buildPrintln("void"));
+                    exitProbe.add(buildPrintln("void"));
                     break;
             }
 
             if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.DRETURN) {
-                probe.add(buildPrintln(""));
+                exitProbe.add(buildPrintln(""));
             }
 
-            instructions.insertBefore(insn, probe);
+            instructions.insertBefore(insn, exitProbe);
         }
-
         accept(mv);
     }
 
     private InsnList buildPrintln(String message) {
-        InsnList list = new InsnList();
-        list.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
-        if (message.isEmpty()) {
-            list.add(new InsnNode(Opcodes.SWAP));
-        } else {
-            list.add(new LdcInsnNode(message));
+        InsnList instructions = new InsnList();
+
+        if (!message.isEmpty()) {
+            instructions.add(new LdcInsnNode(message));
         }
-        list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false));
-        return list;
+
+        instructions.add(new MethodInsnNode(
+            Opcodes.INVOKESTATIC,
+            "fr/bl/drit/asm/agent/transformer/MyTransformer",
+            "jePrint",
+            "(Ljava/lang/String;)V",
+            false));
+
+        return instructions;
     }
 }
