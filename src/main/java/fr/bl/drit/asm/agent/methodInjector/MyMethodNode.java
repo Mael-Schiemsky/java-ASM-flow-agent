@@ -1,10 +1,14 @@
 package fr.bl.drit.asm.agent.methodInjector;
 
+import java.util.ArrayList;
+
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -30,24 +34,39 @@ public class MyMethodNode extends MethodNode{
             return;
         }
 
+        getParameters();
         onEnter();
 
-        getParameters();
-
+        ArrayList<LabelNode> visitedLabels = new ArrayList<>();
         for (AbstractInsnNode insn : instructions.toArray()) {
             int opcode = insn.getOpcode();
             boolean isReturn = (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
             boolean isThrow  = opcode == Opcodes.ATHROW;
+            boolean isJump = (opcode >= Opcodes.IFEQ && opcode <= Opcodes.IF_ACMPNE)
+                                || opcode == Opcodes.IFNULL || opcode == Opcodes.IFNONNULL;
+            boolean isSwitch = opcode == Opcodes.TABLESWITCH || opcode == Opcodes.LOOKUPSWITCH;
 
-            if (!isReturn && !isThrow) continue;
+            if(insn instanceof LabelNode label) {
+                visitedLabels.add(label);
+                continue;
+            }
 
-            InsnList exitProbe = new InsnList();
+            if(isJump) {
+                jumpInsnAnalyse(insn, visitedLabels);
+                continue;
+            }
 
-            exitProbe.add(onExit());
+            if(isSwitch){
+                continue;
+            }
 
-            exitProbe.add(getReturnValue(opcode));
-
-            instructions.insertBefore(insn, exitProbe);
+            if(isReturn || isThrow) {
+                InsnList exitProbe = new InsnList();
+                exitProbe.add(onExit());
+                exitProbe.add(getReturnValue(opcode));
+                instructions.insertBefore(insn, exitProbe);
+                continue;
+            }
         }
 
         accept(mv);
@@ -55,12 +74,7 @@ public class MyMethodNode extends MethodNode{
 
     private void onEnter() {
         InsnList enterProbe = buildPrintln("e:enter, method:" + fullyQualifiedName);
-
-        if (instructions.size() > 0) {
-            instructions.insertBefore(instructions.getFirst(), enterProbe);
-        } else {
-            instructions.add(enterProbe);
-        }
+        instructions.insertBefore(instructions.getFirst(), enterProbe);
     }
 
     private void getParameters() {
@@ -73,52 +87,108 @@ public class MyMethodNode extends MethodNode{
             String message = "p:param, type:" + param + ", value:";
 
             paramProbe.add(buildPrintln(message));
-            
+
             paramProbe.add(new VarInsnNode(
                     param.getOpcode(Opcodes.ILOAD),
                     localIndex));
 
-            switch (param.getSort()) {
-            case Type.BOOLEAN:
-                paramProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Boolean", "toString", "(Z)Ljava/lang/String;", false));
-                break;
-            case Type.BYTE:
-                paramProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Byte", "toString", "(B)Ljava/lang/String;", false));
-                break;
-            case Type.CHAR:
-                paramProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Character", "toString", "(C)Ljava/lang/String;", false));
-                break;
-            case Type.SHORT:
-                paramProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Short", "toString", "(S)Ljava/lang/String;", false));
-                break;
-            case Type.INT:
-                paramProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toString", "(I)Ljava/lang/String;", false));
-                break;
-            case Type.FLOAT:
-                paramProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Float", "toString", "(F)Ljava/lang/String;", false));
-                break;
-            case Type.LONG:
-                paramProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "toString", "(J)Ljava/lang/String;", false));
-                break;
-            case Type.DOUBLE:
-                paramProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "toString", "(D)Ljava/lang/String;", false));
-                break;
-            case Type.ARRAY:
-            case Type.OBJECT:
-            case Type.METHOD:
-                paramProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false));
-                break;
-            case Type.VOID:
-                paramProbe.add(buildPrintln("void"));
-                break;
-            }
+            paramProbe.add(transformVarToString(param.getSort()));
 
             paramProbe.add(buildPrintln(""));
 
             localIndex += param.getSize();
         }
 
-        instructions.insertBefore(instructions.get(2), paramProbe);
+        instructions.insertBefore(instructions.getFirst(), paramProbe);
+    }
+
+    private InsnList transformVarToString(int sort) {
+        InsnList toStringInsn = new InsnList();
+
+        switch (sort) {
+            case Type.BOOLEAN ->
+                toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Boolean", "toString", "(Z)Ljava/lang/String;", false));
+            case Type.BYTE ->
+                toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Byte", "toString", "(B)Ljava/lang/String;", false));
+            case Type.CHAR ->
+                toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Character", "toString", "(C)Ljava/lang/String;", false));
+            case Type.SHORT ->
+                toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Short", "toString", "(S)Ljava/lang/String;", false));
+            case Type.INT ->
+                toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toString", "(I)Ljava/lang/String;", false));
+            case Type.FLOAT ->
+                toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Float", "toString", "(F)Ljava/lang/String;", false));
+            case Type.LONG ->
+                toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "toString", "(J)Ljava/lang/String;", false));
+            case Type.DOUBLE ->
+                toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "toString", "(D)Ljava/lang/String;", false));
+            case Type.ARRAY,
+                 Type.OBJECT,
+                 Type.METHOD ->
+                toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false));
+            case Type.VOID ->
+                toStringInsn.add(buildPrintln("void"));
+            }
+
+        return toStringInsn;
+    }
+
+    private void jumpInsnAnalyse(AbstractInsnNode insn, ArrayList<LabelNode> visitedLabels) {
+        LabelNode targetLabel = getTargetLabelFromInsn(insn);
+
+        if(visitedLabels.contains(targetLabel)){
+            doWhileInstrumentation();
+            return;
+        }
+        
+        AbstractInsnNode targetInsn = insn.getNext();
+        ArrayList<LabelNode> insideTheJumpLabels = new ArrayList<>();
+        while(true){
+            if(targetInsn instanceof LabelNode label){
+                if(label == targetLabel) break;
+                insideTheJumpLabels.add(label);
+            }
+            targetInsn = targetInsn.getNext();
+        }
+
+        AbstractInsnNode previousInsn = targetInsn.getPrevious();
+        if(previousInsn instanceof JumpInsnNode && previousInsn.getOpcode() == Opcodes.GOTO){
+            LabelNode gotoTargetLabel = getTargetLabelFromInsn(previousInsn);
+            if(visitedLabels.contains(gotoTargetLabel)){
+                whileInstrumentation();
+            } else {
+                if(insideTheJumpLabels.contains(gotoTargetLabel)){
+                    ifInstrumentation();
+                } else {
+                    ifElseInstrumentation();
+                }
+            }
+        } else {
+            ifInstrumentation();
+        }
+    }
+
+    private LabelNode getTargetLabelFromInsn(AbstractInsnNode insn) {
+        if (insn instanceof JumpInsnNode jump) {
+            return jump.label;
+        }
+        return null;
+    }
+
+    private void ifInstrumentation(){
+        System.out.println("I see a if block");
+    }
+
+    private void ifElseInstrumentation(){
+        System.out.println("I see a if else block");
+    }
+
+    private void whileInstrumentation(){
+        System.out.println("I see a while block");
+    }
+
+    private void doWhileInstrumentation(){
+        System.out.println("I see a do while block");
     }
 
     private InsnList onExit() {
@@ -135,23 +205,18 @@ public class MyMethodNode extends MethodNode{
         }
 
         switch (opcode) {
-            case Opcodes.IRETURN:
+            case Opcodes.IRETURN ->
                 returnProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toString", "(I)Ljava/lang/String;", false));
-                break;
-            case Opcodes.FRETURN:
+            case Opcodes.FRETURN ->
                 returnProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Float", "toString", "(F)Ljava/lang/String;", false));
-                break;
-            case Opcodes.LRETURN:
+            case Opcodes.LRETURN ->
                 returnProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "toString", "(J)Ljava/lang/String;", false));
-                break;
-            case Opcodes.DRETURN:
+            case Opcodes.DRETURN ->
                 returnProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "toString", "(D)Ljava/lang/String;", false));
-                break;
-            case Opcodes.ARETURN:
-            case Opcodes.RETURN:
-            case Opcodes.ATHROW:
+            case Opcodes.ARETURN,
+                 Opcodes.RETURN,
+                 Opcodes.ATHROW ->
                 returnProbe.add(buildPrintln("void"));
-                break;
         }
 
         if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.DRETURN) {
