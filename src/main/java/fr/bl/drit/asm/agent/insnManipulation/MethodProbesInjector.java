@@ -1,4 +1,4 @@
-package fr.bl.drit.asm.agent.methodInjector;
+package fr.bl.drit.asm.agent.insnManipulation;
 
 import java.util.ArrayList;
 
@@ -15,11 +15,11 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.Type;
 
-public class MyMethodNode extends MethodNode{
+public class MethodProbesInjector extends MethodNode{
 
     private String fullyQualifiedName = "";
 
-    public MyMethodNode(int api, int access, String name, String descriptor, String signature, String[] exceptions, String className, MethodVisitor mv) {
+    public MethodProbesInjector(int api, int access, String name, String descriptor, String signature, String[] exceptions, String className, MethodVisitor mv) {
         super(api, access, name, descriptor, signature, exceptions);
         this.fullyQualifiedName = className + "#" + name + descriptor + (signature != null ? " " + signature : "");
         this.mv = mv;

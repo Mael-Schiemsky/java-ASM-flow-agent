@@ -1,6 +1,6 @@
-package fr.bl.drit.asm.agent.transformer;
+package fr.bl.drit.asm.agent.insnTools;
 
-public class MyTransformer {
+public class printTools {
 
     public static void jePrint(String message) {
         System.out.println(message);
