@@ -48,10 +48,10 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>fr.bl.drit.asm.agent.Main</mainClass>
+                                    <mainClass>fr.bl.drit.asm.agent.agentMains.Main</mainClass>
                                     <manifestEntries>
-                                        <Premain-Class>fr.bl.drit.asm.agent.AsmAgentMain</Premain-Class>
-                                        <Agent-Class>fr.bl.drit.asm.agent.AsmAgentMain</Agent-Class>
+                                        <Premain-Class>fr.bl.drit.asm.agent.agentMains.AsmAgentMain</Premain-Class>
+                                        <Agent-Class>fr.bl.drit.asm.agent.agentMains.AsmAgentMain</Agent-Class>
                                         <Can-Retransform-Classes>true</Can-Retransform-Classes>
                                         <Can-Redefine-Classes>true</Can-Redefine-Classes>
                                     </manifestEntries>

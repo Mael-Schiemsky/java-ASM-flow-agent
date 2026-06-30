@@ -1,15 +1,11 @@
-package fr.bl.drit.asm.agent;
+package fr.bl.drit.asm.agent.agentMains;
 
 import java.io.PrintStream;
 import java.lang.instrument.Instrumentation;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.ClassNode;
-
-import fr.bl.drit.asm.agent.classInjector.MyClassNode;
+import fr.bl.drit.asm.agent.insnManipulation.InsnTransformer;
 
 public class AsmAgentMain {
 
@@ -47,23 +43,10 @@ public class AsmAgentMain {
     }
 
     private static void addTransformer(Instrumentation inst, String target, String outputPath) {
-        inst.addTransformer(new java.lang.instrument.ClassFileTransformer() {
-            @Override
-            public byte[] transform(ClassLoader loader, String name, Class<?> c, java.security.ProtectionDomain d, byte[] b) {
-                if (name.contains(target)) {
-                    ClassNode cn = new MyClassNode();
+        InsnTransformer transformer = new InsnTransformer();
+        transformer.setTarget(target);
 
-                    ClassReader reader = new ClassReader(b);
-                    reader.accept(cn, 0);
-
-                    ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES);
-                    cn.accept(writer);
-
-                    return writer.toByteArray();
-                }
-                return null;
-            }
-        }, true);
+        inst.addTransformer(transformer, true);
     }
 
     private static Map<String, String> parseArgs(String args) {
@@ -91,7 +74,6 @@ public class AsmAgentMain {
         return map;
     }
 
-    
     private static void printUsage(PrintStream out) {
         out.println(
             "[ASM-agent] Usage: target=<prefix[+prefix...]>,out=<dir>");
