@@ -18,6 +18,8 @@ public class ReturnProbe {
             returnProbe.add(new InsnNode(Opcodes.DUP2));
         }
 
+        returnProbe.add(buildPrintln("[\u001B[35m" + "RETURN" + "\u001B[0m] " + "value:"));
+
         switch (opcode) {
             case Opcodes.IRETURN ->
                 returnProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toString", "(I)Ljava/lang/String;", false));

@@ -1,12 +1,9 @@
 package fr.bl.drit.asm.agent.insnManipulation;
 
-import java.util.ArrayList;
-
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import static fr.bl.drit.asm.agent.insnTools.JumpProbe.jumpInsnAnalyse;
@@ -41,7 +38,6 @@ public class MethodProbesInjector extends MethodNode{
 
         onEnter();
 
-        ArrayList<LabelNode> visitedLabels = new ArrayList<>();
         for (AbstractInsnNode insn : instructions.toArray()) {
             int opcode = insn.getOpcode();
             boolean isReturn = (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
@@ -50,13 +46,8 @@ public class MethodProbesInjector extends MethodNode{
                                 || opcode == Opcodes.IFNULL || opcode == Opcodes.IFNONNULL;
             boolean isSwitch = opcode == Opcodes.TABLESWITCH || opcode == Opcodes.LOOKUPSWITCH;
 
-            if(insn instanceof LabelNode label) {
-                visitedLabels.add(label);
-                continue;
-            }
-
             if(isJump) {
-                insnProbes = jumpInsnAnalyse(insn, visitedLabels);
+                insnProbes = jumpInsnAnalyse(insn);
                 instructions.insertBefore(insn, insnProbes);
                 continue;
             }
@@ -78,11 +69,11 @@ public class MethodProbesInjector extends MethodNode{
     }
 
     private void onEnter() {
-        InsnList enterProbe = buildPrintln("e:enter, method:" + fullyQualifiedName);
+        InsnList enterProbe = buildPrintln("[\u001B[32m" + "ENTER" + "\u001B[0m] " + "method: " + fullyQualifiedName);
         instructions.insertBefore(instructions.getFirst(), enterProbe);
     }
 
     private InsnList onExit() {
-        return buildPrintln("e:exit, method:" + fullyQualifiedName);
+        return buildPrintln("[\u001B[31m" + "EXIT" + "\u001B[0m] " + "method: " + fullyQualifiedName);
     }
 }

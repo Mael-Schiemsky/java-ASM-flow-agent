@@ -1,75 +1,35 @@
 package fr.bl.drit.asm.agent.insnTools;
 
-import java.util.ArrayList;
-
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LineNumberNode;
+
+import static fr.bl.drit.asm.agent.insnTools.PrintTools.buildPrintln;
 
 public class JumpProbe {
 
-    public static InsnList jumpInsnAnalyse(AbstractInsnNode insn, ArrayList<LabelNode> visitedLabels) {
-        LabelNode targetLabel = getTargetLabelFromInsn(insn);
-
-        if(visitedLabels.contains(targetLabel)){
-            return doWhileInstrumentation();
-        }
+    public static InsnList jumpInsnAnalyse(AbstractInsnNode insn) {
+        InsnList insnList = new InsnList();
         
-        AbstractInsnNode targetInsn = insn.getNext();
-        ArrayList<LabelNode> insideTheJumpLabels = new ArrayList<>();
-        while(true){
-            System.out.println("targetInsn: " + targetInsn);
-            if(targetInsn instanceof LabelNode label){
-                if(label == targetLabel) break;
-                insideTheJumpLabels.add(label);
+        insnList.add(getCorrespondingLineNumber(insn));
+
+        //TODO : calcul val des arguments du jump
+
+        return insnList;
+    }
+
+    private static InsnList getCorrespondingLineNumber(AbstractInsnNode insn) {
+        int myLineNumber = -1;
+
+        AbstractInsnNode prevInsn = insn.getPrevious();
+        while (prevInsn != null) {
+            if (prevInsn instanceof LineNumberNode lineInsn) {
+                myLineNumber = lineInsn.line;
+                break;
             }
-            targetInsn = targetInsn.getNext();
+            prevInsn = prevInsn.getPrevious();
         }
 
-        AbstractInsnNode previousInsn = targetInsn.getPrevious();
-        if(previousInsn instanceof JumpInsnNode && previousInsn.getOpcode() == Opcodes.GOTO){
-            LabelNode gotoTargetLabel = getTargetLabelFromInsn(previousInsn);
-            if(visitedLabels.contains(gotoTargetLabel)){
-                return whileInstrumentation();
-            } else {
-                if(insideTheJumpLabels.contains(gotoTargetLabel)){
-                    return ifInstrumentation();
-                } else {
-                    return ifElseInstrumentation();
-                }
-            }
-        } else {
-            return ifInstrumentation();
-        }
+        return buildPrintln("[\u001B[33m" + "JUMP" + "\u001B[0m] "  + "instruction corresponding to the line " + myLineNumber);
     }
-
-    private static LabelNode getTargetLabelFromInsn(AbstractInsnNode insn) {
-        if (insn instanceof JumpInsnNode jump) {
-            return jump.label;
-        }
-        return null;
-    }
-
-    private static InsnList ifInstrumentation(){
-        System.out.println("I see a if block");
-        return null;
-    }
-
-    private static InsnList ifElseInstrumentation(){
-        System.out.println("I see a if else block");
-        return null;
-    }
-
-    private static InsnList whileInstrumentation(){
-        System.out.println("I see a while block");
-        return null;
-    }
-
-    private static InsnList doWhileInstrumentation(){
-        System.out.println("I see a do while block");
-        return null;
-    }
-
 }

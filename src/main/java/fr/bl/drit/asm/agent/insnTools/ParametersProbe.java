@@ -17,7 +17,7 @@ public class ParametersProbe {
         int localIndex = (access & Opcodes.ACC_STATIC) != 0 ? 0 : 1;
 
         for (Type param : parameterTypes) {
-            String message = "p:param, type:" + param + ", value:";
+            String message = "[\u001B[36m" + "PARAM" + "\u001B[0m] " + "type: " + param + ", value:";
 
             paramProbe.add(buildPrintln(message));
 
