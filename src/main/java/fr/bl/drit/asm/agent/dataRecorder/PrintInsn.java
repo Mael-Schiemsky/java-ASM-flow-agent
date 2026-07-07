@@ -1,17 +1,17 @@
-package fr.bl.drit.asm.agent.insnTools;
+package fr.bl.drit.asm.agent.dataRecorder;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-public class PrintTools {
+public class PrintInsn implements RecorderInterface {
 
-    public static void jePrint(String message) {
+    public static void printMessage(String message) {
         System.out.println(message);
     }
 
-    public static InsnList buildPrintln(String message) {
+    public InsnList treatMessage(String message) {
         InsnList instructions = new InsnList();
 
         if (!message.isEmpty()) {
@@ -20,12 +20,11 @@ public class PrintTools {
 
         instructions.add(new MethodInsnNode(
             Opcodes.INVOKESTATIC,
-            "fr/bl/drit/asm/agent/insnTools/PrintTools",
-            "jePrint",
+            "fr/bl/drit/asm/agent/dataRecorder/PrintInsn",
+            "printMessage",
             "(Ljava/lang/String;)V",
             false));
 
         return instructions;
     }
-
 }

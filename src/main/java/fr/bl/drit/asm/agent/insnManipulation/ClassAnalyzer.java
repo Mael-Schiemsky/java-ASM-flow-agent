@@ -4,12 +4,15 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import static fr.bl.drit.asm.agent.factory.MethodVisitorFactory.getMethodProbesInjector;
+
 public class ClassAnalyzer extends ClassVisitor {
 
     private String className = "";
+    private static int apiVersion = Opcodes.ASM9;
 
     public ClassAnalyzer(ClassVisitor cv) {
-        super(Opcodes.ASM9, cv);
+        super(apiVersion, cv);
     }
 
     @Override
@@ -20,8 +23,6 @@ public class ClassAnalyzer extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
-
-        return new MethodProbesInjector(Opcodes.ASM9, access, name, desc, signature, exceptions, className, mv);
+        return getMethodProbesInjector(className, apiVersion, access, name, desc, signature, exceptions, cv);
     }
 }

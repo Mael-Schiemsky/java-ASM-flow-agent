@@ -6,12 +6,18 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
-import static fr.bl.drit.asm.agent.insnTools.JumpProbe.jumpInsnAnalyse;
-import static fr.bl.drit.asm.agent.insnTools.ParametersProbe.getParameters;
-import static fr.bl.drit.asm.agent.insnTools.ReturnProbe.getReturnValue;
-import static fr.bl.drit.asm.agent.insnTools.PrintTools.buildPrintln;
+import fr.bl.drit.asm.agent.insnProbes.JumpProbe;
+import fr.bl.drit.asm.agent.insnProbes.ParametersProbe;
+import fr.bl.drit.asm.agent.insnProbes.ReturnProbe;
+import fr.bl.drit.asm.agent.insnProbes.SwitchProbe;
+import static fr.bl.drit.asm.agent.dataRecorder.RecorderProxy.treatMessage;
 
 public class MethodProbesInjector extends MethodNode{
+
+    private ParametersProbe parametersProbe;
+    private JumpProbe jumpProbe;
+    private SwitchProbe switchProbe;
+    private ReturnProbe returnProbe;
 
     private String fullyQualifiedName = "";
 
@@ -20,6 +26,22 @@ public class MethodProbesInjector extends MethodNode{
 
         this.fullyQualifiedName = className + "#" + name + descriptor + (signature != null ? " " + signature : "");
         this.mv = mv;
+    }
+
+    public void setJumpProbe(JumpProbe jumpProbe) {
+        this.jumpProbe = jumpProbe;
+    }
+
+    public void setParametersProbe(ParametersProbe parametersProbe) {
+        this.parametersProbe = parametersProbe;
+    }
+
+    public void setSwitchProbe(SwitchProbe switchProbe) {
+        this.switchProbe = switchProbe;
+    }
+
+    public void setReturnProbe(ReturnProbe returnProbe) {
+        this.returnProbe = returnProbe;
     }
 
     @Override
@@ -33,32 +55,35 @@ public class MethodProbesInjector extends MethodNode{
 
         InsnList insnProbes;
 
-        insnProbes = getParameters(access, desc, instructions);
+        insnProbes = parametersProbe.getParameters(access, desc, instructions);
         instructions.insertBefore(instructions.getFirst(), insnProbes);
 
         onEnter();
 
         for (AbstractInsnNode insn : instructions.toArray()) {
             int opcode = insn.getOpcode();
-            boolean isReturn = (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
-            boolean isThrow  = opcode == Opcodes.ATHROW;
+
             boolean isJump = (opcode >= Opcodes.IFEQ && opcode <= Opcodes.IF_ACMPNE)
                                 || opcode == Opcodes.IFNULL || opcode == Opcodes.IFNONNULL;
             boolean isSwitch = opcode == Opcodes.TABLESWITCH || opcode == Opcodes.LOOKUPSWITCH;
+            boolean isReturn = (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
+            boolean isThrow  = opcode == Opcodes.ATHROW;
 
             if(isJump) {
-                insnProbes = jumpInsnAnalyse(insn);
+                insnProbes = jumpProbe.jumpInsnAnalyse(insn);
                 instructions.insertBefore(insn, insnProbes);
                 continue;
             }
 
             if(isSwitch){
+                insnProbes = switchProbe.getSwitchInsnAnalyse(insn);
+                instructions.insertBefore(insn, insnProbes);
                 continue;
             }
 
             if(isReturn || isThrow) {
                 insnProbes = onExit();
-                insnProbes.add(getReturnValue(opcode));
+                insnProbes.add(returnProbe.getReturnValue(opcode));
 
                 instructions.insertBefore(insn, insnProbes);
                 continue;
@@ -69,11 +94,11 @@ public class MethodProbesInjector extends MethodNode{
     }
 
     private void onEnter() {
-        InsnList enterProbe = buildPrintln("[\u001B[32m" + "ENTER" + "\u001B[0m] " + "method: " + fullyQualifiedName);
+        InsnList enterProbe = treatMessage("[\u001B[32m" + "ENTER" + "\u001B[0m] " + "method: " + fullyQualifiedName);
         instructions.insertBefore(instructions.getFirst(), enterProbe);
     }
 
     private InsnList onExit() {
-        return buildPrintln("[\u001B[31m" + "EXIT" + "\u001B[0m] " + "method: " + fullyQualifiedName);
+        return treatMessage("[\u001B[31m" + "EXIT" + "\u001B[0m] " + "method: " + fullyQualifiedName);
     }
 }

@@ -1,4 +1,6 @@
-package fr.bl.drit.asm.agent.insnTools;
+package fr.bl.drit.asm.agent.insnProbes;
+
+import static fr.bl.drit.asm.agent.dataRecorder.RecorderProxy.treatMessage;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InsnList;
@@ -6,11 +8,9 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.Type;
 
-import static fr.bl.drit.asm.agent.insnTools.PrintTools.buildPrintln;
-
 public class ParametersProbe {
 
-    public static InsnList getParameters(int access, String desc, InsnList instructions) {
+    public InsnList getParameters(int access, String desc, InsnList instructions) {
         InsnList paramProbe = new InsnList();
         Type[] parameterTypes = Type.getArgumentTypes(desc);
 
@@ -19,7 +19,7 @@ public class ParametersProbe {
         for (Type param : parameterTypes) {
             String message = "[\u001B[36m" + "PARAM" + "\u001B[0m] " + "type: " + param + ", value:";
 
-            paramProbe.add(buildPrintln(message));
+            paramProbe.add(treatMessage(message));
 
             paramProbe.add(new VarInsnNode(
                     param.getOpcode(Opcodes.ILOAD),
@@ -27,7 +27,7 @@ public class ParametersProbe {
 
             paramProbe.add(transformVarToString(param.getSort()));
 
-            paramProbe.add(buildPrintln(""));
+            paramProbe.add(treatMessage(""));
 
             localIndex += param.getSize();
         }
@@ -35,7 +35,7 @@ public class ParametersProbe {
         return paramProbe;
     }
 
-    private static InsnList transformVarToString(int sort) {
+    private InsnList transformVarToString(int sort) {
         InsnList toStringInsn = new InsnList();
 
         switch (sort) {
@@ -59,11 +59,8 @@ public class ParametersProbe {
                  Type.OBJECT,
                  Type.METHOD ->
                 toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false));
-            case Type.VOID ->
-                toStringInsn.add(buildPrintln("void"));
             }
 
         return toStringInsn;
     }
-
 }

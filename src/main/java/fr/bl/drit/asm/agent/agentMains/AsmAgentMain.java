@@ -5,7 +5,11 @@ import java.lang.instrument.Instrumentation;
 import java.util.HashMap;
 import java.util.Map;
 
+import fr.bl.drit.asm.agent.dataRecorder.PrintInsn;
+import fr.bl.drit.asm.agent.dataRecorder.RecorderInterface;
+import fr.bl.drit.asm.agent.dataRecorder.RecorderProxy;
 import fr.bl.drit.asm.agent.insnManipulation.InsnTransformer;
+import static fr.bl.drit.asm.agent.factory.InsnTransformerFactory.getInsnTransformer;
 
 public class AsmAgentMain {
 
@@ -39,13 +43,18 @@ public class AsmAgentMain {
             return;
         }
 
+        initRecorderProxy();
         addTransformer(inst, target, outputPath);
     }
 
-    private static void addTransformer(Instrumentation inst, String target, String outputPath) {
-        InsnTransformer transformer = new InsnTransformer();
-        transformer.setTarget(target);
+    private static void initRecorderProxy() {
+        RecorderInterface recorder = new PrintInsn();
+        RecorderProxy.setRecorder(recorder);
+    }
 
+    private static void addTransformer(Instrumentation inst, String target, String outputPath) {
+        InsnTransformer transformer = getInsnTransformer(target);
+        
         inst.addTransformer(transformer, true);
     }
 
