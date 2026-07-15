@@ -11,7 +11,9 @@ public class RecorderProxy {
     }
 
     public static InsnList treatMessage(String message) {
-        return recorder.treatMessage(message);
+        if(recorder != null) {
+            return recorder.treatMessage(message);
+        }
+        return new InsnList();
     }
-
 }
