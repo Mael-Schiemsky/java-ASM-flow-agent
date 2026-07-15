@@ -69,6 +69,11 @@ public class MethodProbesInjector extends MethodNode{
             boolean isReturn = (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
             boolean isThrow  = opcode == Opcodes.ATHROW;
 
+            if(switchProbe.isBannedInsn(insn)) {
+                switchProbe.removeBannedInsn(insn);
+                continue;
+            }
+
             if(isJump) {
                 insnProbes = jumpProbe.jumpInsnAnalyse(insn);
                 instructions.insertBefore(insn, insnProbes);
