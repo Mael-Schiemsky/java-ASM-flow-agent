@@ -4,6 +4,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
 import fr.bl.drit.asm.agent.insnManipulation.MethodProbesInjector;
+import fr.bl.drit.asm.agent.insnProbes.BanProb;
 import fr.bl.drit.asm.agent.insnProbes.JumpProbe;
 import fr.bl.drit.asm.agent.insnProbes.ParametersProbe;
 import fr.bl.drit.asm.agent.insnProbes.ReturnProbe;
@@ -18,9 +19,11 @@ public class MethodVisitorFactory {
         MethodVisitor mv = cv.visitMethod(access, name, descriptor, signature, exceptions);
         MethodProbesInjector methodInjector = new MethodProbesInjector(api, access, name, descriptor, signature, exceptions, className, mv);
 
+        BanProb ban = new BanProb();
         methodInjector.setParametersProbe(new ParametersProbe());
         methodInjector.setJumpProbe(new JumpProbe());
-        methodInjector.setSwitchProbe(new SwitchProbe());
+        methodInjector.setSwitchProbe(new SwitchProbe(ban));
+        methodInjector.setBanProb(ban);
         methodInjector.setReturnProbe(new ReturnProbe());
         
         return methodInjector;

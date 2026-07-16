@@ -18,18 +18,11 @@ import java.util.Arrays;
 import java.util.List;
 
 public class SwitchProbe {
-    private ArrayList<AbstractInsnNode> bannedInsn = new ArrayList<>();
 
-    public boolean isBannedInsn(AbstractInsnNode insn) {
-        return bannedInsn.contains(insn);
-    }
+    BanProb bannedInsn;
 
-    public ArrayList<AbstractInsnNode> getBannedInsn(){
-        return bannedInsn;
-    }
-
-    public void removeBannedInsn(AbstractInsnNode insn) {
-        bannedInsn.remove(insn);
+    public SwitchProbe(BanProb ban) {
+        this.bannedInsn = ban;
     }
 
     public ArrayList<AbstractInsnNode> getSwitchInsnAnalyse(AbstractInsnNode insn, ArrayList<AbstractInsnNode> insnList) {
@@ -78,14 +71,14 @@ public class SwitchProbe {
         InsnList switchProbe = new InsnList();
 
         switchProbe.add(getCorrespondingLineNumber(insn));
-        addBannedInsnFromSwitchString(insn);
+        addBanedInsnFromSwitchString(insn);
         switchProbe.add(searchPreviousInsn(prevInsn).clone(null));
         switchProbe.add(treatMessage("SWITCH"));
 
         insnList.addAll(insnList.indexOf(insn), Arrays.asList(switchProbe.toArray()));
     }
 
-    private void addBannedInsnFromSwitchString(AbstractInsnNode insn) {
+    private void addBanedInsnFromSwitchString(AbstractInsnNode insn) {
         LabelNode dflt = getDefaultLabel(insn);
         List<LabelNode> labels = getLabels(insn);
 
@@ -97,7 +90,7 @@ public class SwitchProbe {
                                 || tempInsn.getOpcode() == Opcodes.IFNULL || tempInsn.getOpcode() == Opcodes.IFNONNULL;
 
                 if(isJump) {
-                    bannedInsn.add(tempInsn);
+                    bannedInsn.addBanedInsn(tempInsn);
                     break;
                 }
 
@@ -110,7 +103,7 @@ public class SwitchProbe {
             boolean isSwitch = tempInsn.getOpcode() == Opcodes.TABLESWITCH || tempInsn.getOpcode() == Opcodes.LOOKUPSWITCH;
 
             if(isSwitch) {
-                bannedInsn.add(tempInsn);
+                bannedInsn.addBanedInsn(tempInsn);
                 break;
             }
             
@@ -181,6 +174,6 @@ public class SwitchProbe {
             prevInsn = prevInsn.getPrevious();
         }
 
-        return treatMessage("SWITCH", "switch instruction: " + insn.getOpcode(), "line: " + myLineNumber);
+        return treatMessage("SWITCH", "switch_insn: " + insn.getOpcode(), "line: " + myLineNumber);
     }
 }
