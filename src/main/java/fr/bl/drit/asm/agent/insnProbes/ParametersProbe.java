@@ -20,10 +20,8 @@ public class ParametersProbe {
 
         int localIndex = (access & Opcodes.ACC_STATIC) != 0 ? 0 : 1;
 
-        for (Type param : parameterTypes) {
-            String message = "[\u001B[36m" + "PARAM" + "\u001B[0m] " + "type: " + param + ", value:";
-
-            paramProbe.add(treatMessage(message));
+        for (Type param : parameterTypes) {;
+            paramProbe.add(treatMessage("PARAM", "type: " + param));
 
             paramProbe.add(new VarInsnNode(
                     param.getOpcode(Opcodes.ILOAD),
@@ -31,7 +29,7 @@ public class ParametersProbe {
 
             paramProbe.add(transformVarToString(param.getSort()));
 
-            paramProbe.add(treatMessage(""));
+            paramProbe.add(treatMessage("PARAM"));
 
             localIndex += param.getSize();
         }

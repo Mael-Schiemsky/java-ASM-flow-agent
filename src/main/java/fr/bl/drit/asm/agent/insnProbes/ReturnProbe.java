@@ -21,12 +21,12 @@ public class ReturnProbe {
             returnProbe.add(new InsnNode(Opcodes.DUP2));
         }
 
-        returnProbe.add(treatMessage("[\u001B[35m" + "RETURN" + "\u001B[0m] " + "value:"));
+        returnProbe.add(treatMessage("RETURN", "value:"));
 
         returnProbe.add(transformVarToString(opcode));
 
         if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.DRETURN) {
-            returnProbe.add(treatMessage(""));
+            returnProbe.add(treatMessage("RETURN"));
         }
 
         insnList.addAll(insnList.indexOf(insn), Arrays.asList(returnProbe.toArray()));
@@ -48,7 +48,7 @@ public class ReturnProbe {
             case Opcodes.ARETURN,
                  Opcodes.RETURN,
                  Opcodes.ATHROW ->
-                toStringInsn.add(treatMessage("void"));
+                toStringInsn.add(treatMessage("", "void"));
         }
 
         return toStringInsn;

@@ -97,7 +97,7 @@ public class MethodProbesInjector extends MethodNode{
     }
 
     private ArrayList<AbstractInsnNode> onEnter(ArrayList<AbstractInsnNode> insnList) {
-        InsnList enterProbe = treatMessage("[\u001B[32m" + "ENTER" + "\u001B[0m] " + "method: " + fullyQualifiedName);
+        InsnList enterProbe = treatMessage("ENTER", "method: " + fullyQualifiedName);
 
         insnList.addAll(0, Arrays.asList(enterProbe.toArray()));
 
@@ -105,7 +105,7 @@ public class MethodProbesInjector extends MethodNode{
     }
 
     private ArrayList<AbstractInsnNode> onExit(AbstractInsnNode insn, ArrayList<AbstractInsnNode> insnList) {
-        InsnList exitProbe = treatMessage("[\u001B[31m" + "EXIT" + "\u001B[0m] " + "method: " + fullyQualifiedName);
+        InsnList exitProbe = treatMessage("EXIT", "method: " + fullyQualifiedName);
 
         insnList.addAll(insnList.indexOf(insn), Arrays.asList(exitProbe.toArray()));
 

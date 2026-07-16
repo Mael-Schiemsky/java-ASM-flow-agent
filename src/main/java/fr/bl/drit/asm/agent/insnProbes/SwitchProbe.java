@@ -80,7 +80,7 @@ public class SwitchProbe {
         switchProbe.add(getCorrespondingLineNumber(insn));
         addBannedInsnFromSwitchString(insn);
         switchProbe.add(searchPreviousInsn(prevInsn).clone(null));
-        switchProbe.add(treatMessage(""));
+        switchProbe.add(treatMessage("SWITCH"));
 
         insnList.addAll(insnList.indexOf(insn), Arrays.asList(switchProbe.toArray()));
     }
@@ -153,7 +153,7 @@ public class SwitchProbe {
                             "toString",
                             "()Ljava/lang/String;",
                             false));
-        switchProbe.add(treatMessage(""));
+        switchProbe.add(treatMessage("SWITCH"));
 
         insnList.addAll(insnList.indexOf(prevInsn), Arrays.asList(switchProbe.toArray()));
     }
@@ -164,7 +164,7 @@ public class SwitchProbe {
         switchProbe.add(getCorrespondingLineNumber(insn));
         switchProbe.add(new InsnNode(Opcodes.DUP));
         switchProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toString", "(I)Ljava/lang/String;", false));
-        switchProbe.add(treatMessage(""));
+        switchProbe.add(treatMessage("SWITCH"));
 
         insnList.addAll(insnList.indexOf(insn), Arrays.asList(switchProbe.toArray()));
     }
@@ -181,7 +181,6 @@ public class SwitchProbe {
             prevInsn = prevInsn.getPrevious();
         }
 
-        return treatMessage("[\u001B[33m" + "SWITCH" + "\u001B[0m] " + "switch instruction: " + insn.getOpcode()
-                            + " corresponding to the line " + myLineNumber);
+        return treatMessage("SWITCH", "switch instruction: " + insn.getOpcode(), "line: " + myLineNumber);
     }
 }

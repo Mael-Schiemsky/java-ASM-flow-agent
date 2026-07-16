@@ -10,9 +10,9 @@ public class RecorderProxy {
         RecorderProxy.recorder = recorder;
     }
 
-    public static InsnList treatMessage(String message) {
+    public static InsnList treatMessage(String probeType, String... data) {
         if(recorder != null) {
-            return recorder.treatMessage(message);
+            return recorder.treatMessage(probeType, data);
         }
         return new InsnList();
     }

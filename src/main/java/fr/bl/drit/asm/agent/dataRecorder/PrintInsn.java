@@ -11,10 +11,13 @@ public class PrintInsn implements RecorderInterface {
         System.out.println(message);
     }
 
-    public InsnList treatMessage(String message) {
+    public InsnList treatMessage(String probeType, String... data) {
         InsnList instructions = new InsnList();
 
-        if (!message.isEmpty()) {
+        if (data.length > 0) {
+            String message = "";
+            message += colorProbeType(probeType);
+            message += String.join(", ", data);
             instructions.add(new LdcInsnNode(message));
         }
 
@@ -26,5 +29,37 @@ public class PrintInsn implements RecorderInterface {
             false));
 
         return instructions;
+    }
+
+    private String colorProbeType(String probeType) {
+        String coloredProbeType = "";
+
+        switch (probeType) {
+            case "ENTER":
+                coloredProbeType = "[\u001B[32m" + probeType + "\u001B[0m] ";
+                break;
+            case "EXIT":
+                coloredProbeType = "[\u001B[31m" + probeType + "\u001B[0m] ";
+                break;
+            case "PARAM":
+                coloredProbeType = "[\u001B[36m" + probeType + "\u001B[0m] ";
+                break;
+            case "JUMP":
+                coloredProbeType = "[\u001B[33m" + probeType + "\u001B[0m] ";
+                break;
+            case "SWITCH":
+                coloredProbeType = "[\u001B[34m" + probeType + "\u001B[0m] ";
+                break;
+            case "RETURN":
+                coloredProbeType = "[\u001B[35m" + probeType + "\u001B[0m] ";
+                break;
+            case "":
+                coloredProbeType = "";
+                break;
+            default:
+                coloredProbeType = "[" + probeType + "] ";
+        }
+
+        return coloredProbeType;
     }
 }

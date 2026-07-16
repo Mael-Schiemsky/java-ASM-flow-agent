@@ -4,6 +4,6 @@ import org.objectweb.asm.tree.InsnList;
 
 public interface RecorderInterface {
 
-    public InsnList treatMessage(String message);
+    public InsnList treatMessage(String probeType, String... data);
 
 }

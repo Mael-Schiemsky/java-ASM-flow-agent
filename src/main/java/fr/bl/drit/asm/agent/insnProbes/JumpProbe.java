@@ -35,9 +35,9 @@ public class JumpProbe {
 
         jumpProbe.add(getCorrespondingLineNumber(insn));
 
-        jumpProbe.add(treatMessage(""));
+        jumpProbe.add(treatMessage("JUMP"));
         if(isIFdouble  || isIFobjDouble){
-           jumpProbe.add(treatMessage("")); 
+           jumpProbe.add(treatMessage("JUMP")); 
         }
 
         insnList.addAll(insnList.indexOf(insn), Arrays.asList(jumpProbe.toArray()));
@@ -72,6 +72,6 @@ public class JumpProbe {
             prevInsn = prevInsn.getPrevious();
         }
 
-        return treatMessage("[\u001B[33m" + "JUMP" + "\u001B[0m] "  + "instruction corresponding to the line " + myLineNumber);
+        return treatMessage("JUMP", "line: " + myLineNumber);
     }
 }
