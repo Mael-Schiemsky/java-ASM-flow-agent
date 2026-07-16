@@ -2,17 +2,20 @@ package fr.bl.drit.asm.agent.insnProbes;
 
 import static fr.bl.drit.asm.agent.dataRecorder.RecorderProxy.treatMessage;
 
+import java.util.ArrayList;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import java.util.Arrays;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 public class JumpProbe {
 
-    public InsnList jumpInsnAnalyse(AbstractInsnNode insn) {
-        InsnList insnList = new InsnList();
+    public ArrayList<AbstractInsnNode> jumpInsnAnalyse(AbstractInsnNode insn, ArrayList<AbstractInsnNode> insnList) {
+        InsnList jumpProbe = new InsnList();
 
         boolean isIFsingle = (insn.getOpcode() >= Opcodes.IFEQ && insn.getOpcode() <= Opcodes.IFLE);
         boolean isIFobjSingle = (insn.getOpcode() >= Opcodes.IFNULL && insn.getOpcode() <= Opcodes.IFNONNULL);
@@ -28,15 +31,16 @@ public class JumpProbe {
             descriptor = "(Ljava/lang/Object;)Ljava/lang/String;";
         }
 
-        insnList.add(transformVarToString(isIFsingle || isIFobjSingle, descriptor));
+        jumpProbe.add(transformVarToString(isIFsingle || isIFobjSingle, descriptor));
 
-        insnList.add(getCorrespondingLineNumber(insn));
+        jumpProbe.add(getCorrespondingLineNumber(insn));
 
-        insnList.add(treatMessage(""));
+        jumpProbe.add(treatMessage(""));
         if(isIFdouble  || isIFobjDouble){
-           insnList.add(treatMessage("")); 
+           jumpProbe.add(treatMessage("")); 
         }
 
+        insnList.addAll(insnList.indexOf(insn), Arrays.asList(jumpProbe.toArray()));
         return insnList;
     }
 

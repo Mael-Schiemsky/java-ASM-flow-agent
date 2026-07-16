@@ -14,6 +14,7 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import static fr.bl.drit.asm.agent.dataRecorder.RecorderProxy.treatMessage;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SwitchProbe {
@@ -31,46 +32,24 @@ public class SwitchProbe {
         bannedInsn.remove(insn);
     }
 
-    public InsnList getSwitchInsnAnalyse(AbstractInsnNode insn) {
-        InsnList insnProbes = new InsnList();
+    public ArrayList<AbstractInsnNode> getSwitchInsnAnalyse(AbstractInsnNode insn, ArrayList<AbstractInsnNode> insnList) {
+        AbstractInsnNode prevInsn = searchPreviousInsn(insn);
 
-        insnProbes.add(getCorrespondingLineNumber(insn));
-        insnProbes.add(switchCaseAnalyse(insn));
-        insnProbes.add(treatMessage(""));
-        
-        return insnProbes;
-    }
-
-    private InsnList switchCaseAnalyse(AbstractInsnNode insn) {
-        InsnList toStringInsn = new InsnList();
-
-        AbstractInsnNode tempInsn = searchPreviousInsn(insn);
-        if(isStringHashCodeInsn(tempInsn)) {
-            addBannedInsnFromSwitchString(insn);
-            toStringInsn.add(searchPreviousInsn(tempInsn).clone(null));
-            return toStringInsn;
-        }
-
-        toStringInsn.add(new InsnNode(Opcodes.DUP));
-        toStringInsn.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toString", "(I)Ljava/lang/String;", false));
-
-        return toStringInsn;
-    }
-
-    private InsnList getCorrespondingLineNumber(AbstractInsnNode insn) {
-        int myLineNumber = -1;
-
-        AbstractInsnNode prevInsn = insn.getPrevious();
-        while (prevInsn != null) {
-            if (prevInsn instanceof LineNumberNode lineInsn) {
-                myLineNumber = lineInsn.line;
-                break;
+        if(isStringHashCodeInsn(prevInsn)) {
+            switchStringProbe(insn, prevInsn, insnList);
+        } else if(prevInsn.getOpcode() == Opcodes.IALOAD) {
+            prevInsn = searchPreviousInsn(prevInsn);
+            if(prevInsn instanceof MethodInsnNode methodInsn
+                && methodInsn.getOpcode() == Opcodes.INVOKEVIRTUAL
+                && methodInsn.name.equals("ordinal")
+                && methodInsn.desc.equals("()I")) {
+                switchEnumProbe(prevInsn, insnList);
             }
-            prevInsn = prevInsn.getPrevious();
+        } else {
+            switchIntProbe(insn, insnList);
         }
 
-        return treatMessage("[\u001B[33m" + "SWITCH" + "\u001B[0m] " + "switch instruction: " + insn.getOpcode()
-                            + " corresponding to the line " + myLineNumber);
+        return insnList;    
     }
 
     private AbstractInsnNode searchPreviousInsn(AbstractInsnNode insn) {
@@ -93,6 +72,17 @@ public class SwitchProbe {
                 && methodInsn.owner.equals("java/lang/String")
                 && methodInsn.name.equals("hashCode")
                 && methodInsn.desc.equals("()I");
+    }
+
+    private void switchStringProbe(AbstractInsnNode insn, AbstractInsnNode prevInsn, ArrayList<AbstractInsnNode> insnList) {
+        InsnList switchProbe = new InsnList();
+
+        switchProbe.add(getCorrespondingLineNumber(insn));
+        addBannedInsnFromSwitchString(insn);
+        switchProbe.add(searchPreviousInsn(prevInsn).clone(null));
+        switchProbe.add(treatMessage(""));
+
+        insnList.addAll(insnList.indexOf(insn), Arrays.asList(switchProbe.toArray()));
     }
 
     private void addBannedInsnFromSwitchString(AbstractInsnNode insn) {
@@ -148,6 +138,50 @@ public class SwitchProbe {
         if(insn instanceof LookupSwitchInsnNode lookupSwitchInsn) {
             return lookupSwitchInsn.labels;
         }
+
         return null;
+    }
+
+    private void switchEnumProbe(AbstractInsnNode prevInsn, ArrayList<AbstractInsnNode> insnList) {
+        InsnList switchProbe = new InsnList();
+
+        switchProbe.add(getCorrespondingLineNumber(prevInsn));
+        switchProbe.add(new InsnNode(Opcodes.DUP));
+        switchProbe.add(new MethodInsnNode(
+                            Opcodes.INVOKEVIRTUAL,
+                            "java/lang/Enum",
+                            "toString",
+                            "()Ljava/lang/String;",
+                            false));
+        switchProbe.add(treatMessage(""));
+
+        insnList.addAll(insnList.indexOf(prevInsn), Arrays.asList(switchProbe.toArray()));
+    }
+
+    private void switchIntProbe(AbstractInsnNode insn, ArrayList<AbstractInsnNode> insnList) {
+        InsnList switchProbe = new InsnList();
+
+        switchProbe.add(getCorrespondingLineNumber(insn));
+        switchProbe.add(new InsnNode(Opcodes.DUP));
+        switchProbe.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "toString", "(I)Ljava/lang/String;", false));
+        switchProbe.add(treatMessage(""));
+
+        insnList.addAll(insnList.indexOf(insn), Arrays.asList(switchProbe.toArray()));
+    }
+
+    private InsnList getCorrespondingLineNumber(AbstractInsnNode insn) {
+        int myLineNumber = -1;
+
+        AbstractInsnNode prevInsn = insn.getPrevious();
+        while (prevInsn != null) {
+            if (prevInsn instanceof LineNumberNode lineInsn) {
+                myLineNumber = lineInsn.line;
+                break;
+            }
+            prevInsn = prevInsn.getPrevious();
+        }
+
+        return treatMessage("[\u001B[33m" + "SWITCH" + "\u001B[0m] " + "switch instruction: " + insn.getOpcode()
+                            + " corresponding to the line " + myLineNumber);
     }
 }

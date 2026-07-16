@@ -5,6 +5,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import fr.bl.drit.asm.agent.insnProbes.JumpProbe;
 import fr.bl.drit.asm.agent.insnProbes.ParametersProbe;
@@ -53,18 +55,16 @@ public class MethodProbesInjector extends MethodNode{
             return;
         }
 
-        InsnList insnProbes;
+        ArrayList<AbstractInsnNode> insnList = new ArrayList<>(Arrays.asList(instructions.toArray()));
 
-        insnProbes = parametersProbe.getParameters(access, desc, instructions);
-        instructions.insertBefore(instructions.getFirst(), insnProbes);
-
-        onEnter();
+        insnList = parametersProbe.getParameters(access, desc, insnList);
+        insnList = onEnter(insnList);
 
         for (AbstractInsnNode insn : instructions.toArray()) {
             int opcode = insn.getOpcode();
 
             boolean isJump = (opcode >= Opcodes.IFEQ && opcode <= Opcodes.IF_ACMPNE)
-                                || opcode == Opcodes.IFNULL || opcode == Opcodes.IFNONNULL;
+                            || opcode == Opcodes.IFNULL || opcode == Opcodes.IFNONNULL;
             boolean isSwitch = opcode == Opcodes.TABLESWITCH || opcode == Opcodes.LOOKUPSWITCH;
             boolean isReturn = (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
             boolean isThrow  = opcode == Opcodes.ATHROW;
@@ -75,35 +75,40 @@ public class MethodProbesInjector extends MethodNode{
             }
 
             if(isJump) {
-                insnProbes = jumpProbe.jumpInsnAnalyse(insn);
-                instructions.insertBefore(insn, insnProbes);
+                insnList = jumpProbe.jumpInsnAnalyse(insn, insnList);
                 continue;
             }
 
             if(isSwitch){
-                insnProbes = switchProbe.getSwitchInsnAnalyse(insn);
-                instructions.insertBefore(insn, insnProbes);
+                insnList = switchProbe.getSwitchInsnAnalyse(insn, insnList);
                 continue;
             }
 
             if(isReturn || isThrow) {
-                insnProbes = onExit();
-                insnProbes.add(returnProbe.getReturnValue(opcode));
-
-                instructions.insertBefore(insn, insnProbes);
+                insnList = onExit(insn, insnList);
+                insnList = returnProbe.getReturnValue(opcode, insn, insnList);
                 continue;
             }
         }
 
+        instructions = insnList.stream().collect(InsnList::new, InsnList::add, InsnList::add);
+
         accept(mv);
     }
 
-    private void onEnter() {
+    private ArrayList<AbstractInsnNode> onEnter(ArrayList<AbstractInsnNode> insnList) {
         InsnList enterProbe = treatMessage("[\u001B[32m" + "ENTER" + "\u001B[0m] " + "method: " + fullyQualifiedName);
-        instructions.insertBefore(instructions.getFirst(), enterProbe);
+
+        insnList.addAll(0, Arrays.asList(enterProbe.toArray()));
+
+        return insnList;
     }
 
-    private InsnList onExit() {
-        return treatMessage("[\u001B[31m" + "EXIT" + "\u001B[0m] " + "method: " + fullyQualifiedName);
+    private ArrayList<AbstractInsnNode> onExit(AbstractInsnNode insn, ArrayList<AbstractInsnNode> insnList) {
+        InsnList exitProbe = treatMessage("[\u001B[31m" + "EXIT" + "\u001B[0m] " + "method: " + fullyQualifiedName);
+
+        insnList.addAll(insnList.indexOf(insn), Arrays.asList(exitProbe.toArray()));
+
+        return insnList;
     }
 }

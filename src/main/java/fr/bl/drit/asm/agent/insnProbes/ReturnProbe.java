@@ -1,6 +1,9 @@
 package fr.bl.drit.asm.agent.insnProbes;
 
 import static fr.bl.drit.asm.agent.dataRecorder.RecorderProxy.treatMessage;
+import java.util.ArrayList;
+import java.util.Arrays;
+import org.objectweb.asm.tree.AbstractInsnNode;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InsnList;
@@ -9,7 +12,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 
 public class ReturnProbe {
 
-    public InsnList getReturnValue(int opcode){
+    public ArrayList<AbstractInsnNode> getReturnValue(int opcode, AbstractInsnNode insn, ArrayList<AbstractInsnNode> insnList) {
         InsnList returnProbe = new InsnList();
 
         if (opcode == Opcodes.IRETURN || opcode == Opcodes.FRETURN) {
@@ -25,8 +28,9 @@ public class ReturnProbe {
         if (opcode >= Opcodes.IRETURN && opcode <= Opcodes.DRETURN) {
             returnProbe.add(treatMessage(""));
         }
-        
-        return returnProbe;
+
+        insnList.addAll(insnList.indexOf(insn), Arrays.asList(returnProbe.toArray()));
+        return insnList;
     }
 
     private InsnList transformVarToString(int opcode) {

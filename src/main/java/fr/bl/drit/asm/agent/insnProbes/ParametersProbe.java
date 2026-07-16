@@ -2,7 +2,11 @@ package fr.bl.drit.asm.agent.insnProbes;
 
 import static fr.bl.drit.asm.agent.dataRecorder.RecorderProxy.treatMessage;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -10,7 +14,7 @@ import org.objectweb.asm.Type;
 
 public class ParametersProbe {
 
-    public InsnList getParameters(int access, String desc, InsnList instructions) {
+    public ArrayList<AbstractInsnNode> getParameters(int access, String desc, ArrayList<AbstractInsnNode> insnList) {
         InsnList paramProbe = new InsnList();
         Type[] parameterTypes = Type.getArgumentTypes(desc);
 
@@ -32,7 +36,8 @@ public class ParametersProbe {
             localIndex += param.getSize();
         }
 
-        return paramProbe;
+        insnList.addAll(0, Arrays.asList(paramProbe.toArray()));
+        return insnList;
     }
 
     private InsnList transformVarToString(int sort) {
