@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 
-public class BanProb {
+public class BanList {
 
     private ArrayList<AbstractInsnNode> banedInsn = new ArrayList<>();
 

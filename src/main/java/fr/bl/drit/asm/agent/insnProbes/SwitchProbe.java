@@ -19,9 +19,9 @@ import java.util.List;
 
 public class SwitchProbe {
 
-    BanProb bannedInsn;
+    BanList bannedInsn;
 
-    public SwitchProbe(BanProb ban) {
+    public SwitchProbe(BanList ban) {
         this.bannedInsn = ban;
     }
 

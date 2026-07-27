@@ -8,7 +8,7 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import fr.bl.drit.asm.agent.insnProbes.BanProb;
+import fr.bl.drit.asm.agent.insnProbes.BanList;
 import fr.bl.drit.asm.agent.insnProbes.JumpProbe;
 import fr.bl.drit.asm.agent.insnProbes.ParametersProbe;
 import fr.bl.drit.asm.agent.insnProbes.ReturnProbe;
@@ -20,7 +20,7 @@ public class MethodProbesInjector extends MethodNode{
     private ParametersProbe parametersProbe;
     private JumpProbe jumpProbe;
     private SwitchProbe switchProbe;
-    private BanProb banProb;
+    private BanList banList;
     private ReturnProbe returnProbe;
 
     private String fullyQualifiedName = "";
@@ -44,8 +44,8 @@ public class MethodProbesInjector extends MethodNode{
         this.switchProbe = switchProbe;
     }
 
-    public void setBanProb(BanProb banProb) {
-        this.banProb = banProb;
+    public void setBanList(BanList banList) {
+        this.banList = banList;
     }
 
     public void setReturnProbe(ReturnProbe returnProbe) {
@@ -75,8 +75,8 @@ public class MethodProbesInjector extends MethodNode{
             boolean isReturn = (opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN);
             boolean isThrow  = opcode == Opcodes.ATHROW;
 
-            if(banProb.isBanedInsn(insn)) {
-                banProb.removeBanedInsn(insn);
+            if(banList.isBanedInsn(insn)) {
+                banList.removeBanedInsn(insn);
                 continue;
             }
 

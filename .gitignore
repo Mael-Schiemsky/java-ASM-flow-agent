@@ -11,7 +11,6 @@
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.nar
 *.ear
@@ -24,7 +23,8 @@ hs_err_pid*
 replay_pid*
 
 # Maven
-target/
+target/*
+!target/asm-agent.jar
 dependency-reduced-pom.xml
 
 # IDE - IntelliJ IDEA
